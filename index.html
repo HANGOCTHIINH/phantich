@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Prompt: Trợ lý Sáng tạo AI (Đã sửa lỗi)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3b82f6;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .dropzone-active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        #image-preview {
+            max-height: 280px;
+            object-fit: contain;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #suggestion-modal-content ol, #suggestion-modal-content ul {
+            list-style-type: decimal;
+            padding-left: 20px;
+        }
+        #suggestion-modal-content li {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-6">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Image to Prompt 4.0 ✨</h1>
+            <p class="text-gray-600 mt-2">Trợ lý sáng tạo AI: Phân tích, tối ưu và brainstorm ý tưởng từ ảnh.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Cột trái: Input & Control -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col space-y-6">
+                <h2 class="text-xl font-bold text-gray-800 border-b pb-3">1. Tải Lên & Tùy Chỉnh</h2>
+                
+                <!-- Vùng Nhập Ảnh -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Vùng Nhập Ảnh</label>
+                    <div id="dropzone" class="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-all duration-300 bg-gray-50">
+                        <div id="dropzone-text" class="text-gray-500">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <p class="mt-2"><b>Kéo và thả ảnh</b> hoặc dán (Ctrl+V)</p>
+                            <p class="text-xs text-gray-500">hoặc <span class="font-semibold text-blue-600">nhấn để chọn file</span></p>
+                        </div>
+                        <img id="image-preview" src="" class="hidden mx-auto rounded-md mt-4" alt="Xem trước ảnh"/>
+                        <input type="file" id="file-input" class="hidden" accept="image/*">
+                    </div>
+                </div>
+
+                <!-- Tùy chọn Phong cách -->
+                <div>
+                    <label for="style-select" class="block text-sm font-medium text-gray-700">Chọn phong cách cho prompt (Tùy chọn):</label>
+                    <select id="style-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                        <option>Keep original style</option>
+                        <optgroup label="Photography Styles">
+                            <option>Photorealistic</option>
+                            <option>Cinematic</option>
+                            <option>35mm film photography</option>
+                            <option>Black and White Photography</option>
+                            <option>Golden Hour</option>
+                            <option>Long Exposure</option>
+                            <option>Macro Photography</option>
+                            <option>Drone Photography</option>
+                        </optgroup>
+                        <optgroup label="Painting & Illustration">
+                            <option>Oil Painting</option>
+                            <option>Watercolor Painting</option>
+                            <option>Impressionism</option>
+                            <option>Surrealism</option>
+                            <option>Pop Art</option>
+                            <option>Concept Art</option>
+                            <option>Children's Book Illustration</option>
+                        </optgroup>
+                        <optgroup label="Digital & Sci-Fi">
+                             <option>Anime/Manga</option>
+                            <option>3D Render</option>
+                            <option>Cyberpunk</option>
+                            <option>Steampunk</option>
+                            <option>Vaporwave</option>
+                            <option>Pixel Art</option>
+                            <option>Low Poly</option>
+                            <option>Glitch Art</option>
+                        </optgroup>
+                        <optgroup label="Artistic Styles">
+                            <option>Fantasy</option>
+                            <option>Minimalist</option>
+                            <option>Abstract</option>
+                            <option>Gothic</option>
+                            <option>Art Deco</option>
+                            <option>Vintage</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <!-- API Key -->
+                <div>
+                    <label for="api-key" class="block text-sm font-medium text-gray-700">API Key của Gemini (Lưu trên trình duyệt)</label>
+                    <div class="mt-1 flex rounded-md shadow-sm">
+                        <input type="password" id="api-key" class="block w-full px-3 py-2 border border-gray-300 rounded-l-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Nhập và lưu API Key của bạn">
+                        <button id="save-key-btn" class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm hover:bg-gray-100">Lưu</button>
+                    </div>
+                     <div class="flex justify-between items-center mt-2">
+                        <span id="api-key-status" class="text-xs text-green-600"></span>
+                        <button id="clear-key-btn" class="text-xs text-red-500 hover:underline">Xóa Key đã lưu</button>
+                    </div>
+                </div>
+
+                <!-- Nút Hành động -->
+                <button id="generate-btn" disabled class="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                    Phân Tích và Tạo Prompt
+                </button>
+            </div>
+
+            <!-- Cột phải: Output -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col">
+                <h2 class="text-xl font-bold text-gray-800 border-b pb-3 mb-4">2. Kết Quả & Sáng tạo</h2>
+                <h3 class="text-sm font-medium text-gray-700 mb-2">Prompt được tạo từ ảnh của bạn:</h3>
+                
+                <div class="relative flex-grow flex flex-col">
+                    <div id="loading-spinner" class="hidden absolute inset-0 bg-white bg-opacity-80 flex justify-center items-center z-10 rounded-md">
+                        <div class="spinner"></div>
+                    </div>
+                    <textarea id="output-prompt" readonly class="w-full flex-grow p-3 border border-gray-300 rounded-md bg-gray-50 resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Prompt chi tiết sẽ xuất hiện ở đây..."></textarea>
+                    <div id="action-buttons" class="mt-4 flex flex-wrap gap-2 justify-end">
+                        <button id="suggest-btn" disabled class="px-4 py-2 border border-purple-500 text-sm font-medium rounded-md text-purple-600 bg-purple-50 hover:bg-purple-100 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed">✨ Gợi ý thêm</button>
+                        <button id="optimize-btn" disabled class="px-4 py-2 border border-indigo-500 text-sm font-medium rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed">✨ Tối ưu cho Midjourney</button>
+                        <button id="copy-btn" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">Sao chép</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Thông báo lỗi -->
+        <div id="error-message" class="hidden mt-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center fade-in"></div>
+        
+        <!-- Modal for Suggestions -->
+        <div id="suggestion-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">✨ Các ý tưởng sáng tạo khác</h3>
+                    <div id="suggestion-modal-content" class="mt-2 px-7 py-3 text-left">
+                        <div id="suggestion-spinner" class="flex justify-center items-center h-32">
+                            <div class="spinner"></div>
+                        </div>
+                        <div id="suggestion-text" class="text-sm text-gray-700"></div>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button id="close-modal-btn" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                            Đóng
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Lựa chọn các phần tử DOM ---
+            const dom = {
+                dropzone: document.getElementById('dropzone'),
+                dropzoneText: document.getElementById('dropzone-text'),
+                fileInput: document.getElementById('file-input'),
+                imagePreview: document.getElementById('image-preview'),
+                styleSelect: document.getElementById('style-select'),
+                apiKeyInput: document.getElementById('api-key'),
+                saveKeyBtn: document.getElementById('save-key-btn'),
+                clearKeyBtn: document.getElementById('clear-key-btn'),
+                apiKeyStatus: document.getElementById('api-key-status'),
+                generateBtn: document.getElementById('generate-btn'),
+                outputPrompt: document.getElementById('output-prompt'),
+                copyBtn: document.getElementById('copy-btn'),
+                suggestBtn: document.getElementById('suggest-btn'),
+                optimizeBtn: document.getElementById('optimize-btn'),
+                loadingSpinner: document.getElementById('loading-spinner'),
+                errorMessage: document.getElementById('error-message'),
+                suggestionModal: document.getElementById('suggestion-modal'),
+                suggestionSpinner: document.getElementById('suggestion-spinner'),
+                suggestionText: document.getElementById('suggestion-text'),
+                closeModalBtn: document.getElementById('close-modal-btn'),
+            };
+
+            let imageBase64 = null;
+            let imageMimeType = null;
+            
+            // --- Chức năng lưu trữ API Key ---
+            const loadApiKey = () => {
+                const savedKey = localStorage.getItem('geminiApiKey');
+                if (savedKey) {
+                    dom.apiKeyInput.value = savedKey;
+                    dom.apiKeyStatus.textContent = 'Đã tải Key đã lưu.';
+                } else {
+                    dom.apiKeyStatus.textContent = 'Chưa có API Key nào được lưu.';
+                }
+            };
+
+            dom.saveKeyBtn.addEventListener('click', () => {
+                const key = dom.apiKeyInput.value.trim();
+                if (key) {
+                    localStorage.setItem('geminiApiKey', key);
+                    dom.apiKeyStatus.textContent = 'Đã lưu Key thành công!';
+                    setTimeout(() => dom.apiKeyStatus.textContent = 'Đã tải Key đã lưu.', 3000);
+                } else {
+                    showError('Vui lòng nhập API Key để lưu.');
+                }
+            });
+
+            dom.clearKeyBtn.addEventListener('click', () => {
+                localStorage.removeItem('geminiApiKey');
+                dom.apiKeyInput.value = '';
+                dom.apiKeyStatus.textContent = 'Đã xóa Key. Chưa có API Key nào được lưu.';
+            });
+
+            loadApiKey();
+
+            // --- Chức năng xử lý ảnh ---
+            const handleImageFile = (file) => {
+                if (!file || !file.type.startsWith('image/')) {
+                    showError("Vui lòng chọn một tệp tin hình ảnh hợp lệ.");
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const fullBase64 = e.target.result;
+                    imageBase64 = fullBase64.split(',')[1];
+                    imageMimeType = fullBase64.match(/data:(.*);base64/)[1];
+                    dom.imagePreview.src = fullBase64;
+                    dom.imagePreview.classList.remove('hidden');
+                    dom.dropzoneText.classList.add('hidden');
+                    dom.generateBtn.disabled = false;
+                    setAiActionsEnabled(false); // Reset AI buttons on new image
+                    dom.outputPrompt.value = ''; // Clear old prompt
+                    hideError();
+                };
+                reader.onerror = () => showError("Đã có lỗi xảy ra khi đọc file ảnh.");
+                reader.readAsDataURL(file);
+            };
+
+            // --- Gán các sự kiện ---
+            dom.dropzone.addEventListener('click', () => dom.fileInput.click());
+            dom.fileInput.addEventListener('change', (e) => e.target.files[0] && handleImageFile(e.target.files[0]));
+            
+            ['dragover', 'drop'].forEach(eventName => dom.dropzone.addEventListener(eventName, e => e.preventDefault()));
+            dom.dropzone.addEventListener('dragenter', () => dom.dropzone.classList.add('dropzone-active'));
+            dom.dropzone.addEventListener('dragleave', () => dom.dropzone.classList.remove('dropzone-active'));
+            dom.dropzone.addEventListener('drop', (e) => {
+                dom.dropzone.classList.remove('dropzone-active');
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleImageFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            window.addEventListener('paste', (e) => {
+                const imageFile = Array.from(e.clipboardData.files).find(item => item.type.startsWith('image/'));
+                if (imageFile) handleImageFile(imageFile);
+            });
+            
+            // --- Chức năng gọi API Gemini ---
+
+            // Hàm gọi API chung, có thể xử lý cả text và vision
+            async function callGeminiAPI(model, requestBody) {
+                const apiKey = dom.apiKeyInput.value.trim();
+                if (!apiKey) throw new Error("Vui lòng nhập và lưu API Key của Gemini.");
+
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error?.message || `Lỗi HTTP: ${response.status}`);
+                }
+                
+                if (data.candidates && data.candidates[0].content?.parts[0]?.text) {
+                    return data.candidates[0].content.parts[0].text.trim();
+                } else {
+                    const finishReason = data.candidates?.[0]?.finishReason || 'UNKNOWN';
+                    let reasonText = `API không trả về nội dung (Lý do: ${finishReason}).`;
+                    if (finishReason === 'SAFETY') reasonText = "Nội dung có thể đã vi phạm chính sách an toàn.";
+                    throw new Error(reasonText);
+                }
+            }
+
+            // Sự kiện nút tạo prompt chính
+            dom.generateBtn.addEventListener('click', async () => {
+                if (!imageBase64) return showError("Vui lòng tải lên một hình ảnh trước.");
+
+                setLoadingState(true);
+                dom.outputPrompt.value = '';
+                hideError();
+
+                try {
+                    // **FIXED**: Construct the full, correct instruction prompt directly.
+                    const instructionPrompt = `You are a world-class prompt engineer specializing in reverse-engineering images into descriptive text prompts for AI image generators. Your task is to analyze the provided image with meticulous detail.
+First, identify and break down every aspect of the image:
+Subject: Describe the main character(s) or focal object(s). Note their appearance, clothing, age, emotion, and posture.
+Setting: Detail the background, foreground, and overall environment. Is it indoors or outdoors? What time of day is it?
+Composition: Analyze the shot type (e.g., close-up, medium shot, wide landscape shot), camera angle (e.g., low angle, eye-level, bird's-eye view), and the rule of thirds.
+Lighting: Describe the lighting scheme. Is it soft natural light, dramatic studio lighting, cinematic lighting, neon glow? Note the direction and color of the light and the quality of the shadows.
+Color Palette: Identify the dominant colors, overall mood, and color harmony (e.g., vibrant, monochromatic, pastel, earth tones).
+After your analysis, synthesize all these details into a single, cohesive, and highly detailed paragraph in English.
+Final Instruction: Render the entire prompt in the following artistic style: ${dom.styleSelect.value}. If the selected style is 'Keep original style', you must describe the intrinsic style of the image itself (e.g., 'impressionistic oil painting', 'grainy 35mm film photograph').
+Your final output must only be the generated prompt text, with no preamble or explanation.`;
+
+                    const requestBody = {
+                        contents: [{ parts: [ { text: instructionPrompt }, { inlineData: { mimeType: imageMimeType, data: imageBase64 } } ] }]
+                    };
+                    
+                    const resultText = await callGeminiAPI('gemini-pro-vision', requestBody);
+                    dom.outputPrompt.value = resultText;
+                    setAiActionsEnabled(true);
+
+                } catch (error) {
+                    showError(`Lỗi khi tạo prompt: ${error.message}`);
+                } finally {
+                    setLoadingState(false);
+                }
+            });
+            
+            // --- Sự kiện cho các nút AI mới ---
+            dom.suggestBtn.addEventListener('click', async () => {
+                const currentPrompt = dom.outputPrompt.value;
+                if (!currentPrompt) return;
+
+                dom.suggestionModal.classList.remove('hidden');
+                dom.suggestionSpinner.classList.remove('hidden');
+                dom.suggestionText.innerHTML = '';
+                
+                try {
+                    const suggestionPrompt = `Based on the following AI art prompt, generate 3 alternative creative variations. Each variation should offer a distinctly different mood, setting, or artistic interpretation. Present them as a numbered list with bold titles for each variation. Original prompt: "${currentPrompt}"`;
+                    const requestBody = { contents: [{ parts: [{ text: suggestionPrompt }] }] };
+                    const suggestions = await callGeminiAPI('gemini-pro', requestBody);
+                    // Format response for better display
+                    dom.suggestionText.innerHTML = suggestions
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold titles
+                        .replace(/\n/g, '<br>'); // New lines
+                } catch (error) {
+                    dom.suggestionText.textContent = `Không thể tạo gợi ý: ${error.message}`;
+                } finally {
+                    dom.suggestionSpinner.classList.add('hidden');
+                }
+            });
+            
+            dom.optimizeBtn.addEventListener('click', async () => {
+                const currentPrompt = dom.outputPrompt.value;
+                if (!currentPrompt) return;
+
+                setLoadingState(true);
+                try {
+                    const optimizationPrompt = `You are a prompt engineering expert for Midjourney. Take the following prompt and optimize it. Add relevant parameters like --ar 16:9, --v 6.0, and enhance the descriptive keywords to maximize visual quality and coherence. Do not explain your process, just provide the final, optimized prompt. Original prompt: "${currentPrompt}"`;
+                    const requestBody = { contents: [{ parts: [{ text: optimizationPrompt }] }] };
+                    const optimizedPrompt = await callGeminiAPI('gemini-pro', requestBody);
+                    dom.outputPrompt.value = optimizedPrompt;
+                } catch (error) {
+                    showError(`Không thể tối ưu prompt: ${error.message}`);
+                } finally {
+                    setLoadingState(false);
+                }
+            });
+
+            // --- Chức năng phụ & quản lý trạng thái UI ---
+            dom.closeModalBtn.addEventListener('click', () => dom.suggestionModal.classList.add('hidden'));
+            
+            dom.copyBtn.addEventListener('click', () => {
+                const textToCopy = dom.outputPrompt.value;
+                if (!textToCopy) return;
+                // **FIXED**: Use a more compatible copy method for iframes.
+                const textarea = document.createElement('textarea');
+                textarea.value = textToCopy;
+                textarea.style.position = 'fixed'; // Prevent scrolling to bottom of page in MS Edge.
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    dom.copyBtn.textContent = 'Đã sao chép!';
+                    setTimeout(() => dom.copyBtn.textContent = 'Sao chép', 2000);
+                } catch (err) {
+                    showError('Không thể sao chép tự động.');
+                }
+                document.body.removeChild(textarea);
+            });
+
+            function setLoadingState(isLoading) {
+                dom.loadingSpinner.classList.toggle('hidden', !isLoading);
+                dom.generateBtn.disabled = isLoading;
+                // **FIXED**: Always disable AI buttons when any loading process starts.
+                dom.suggestBtn.disabled = isLoading;
+                dom.optimizeBtn.disabled = isLoading;
+            }
+            
+            function setAiActionsEnabled(isEnabled) {
+                dom.suggestBtn.disabled = !isEnabled;
+                dom.optimizeBtn.disabled = !isEnabled;
+            }
+
+            const showError = (message) => {
+                dom.errorMessage.textContent = message;
+                dom.errorMessage.classList.remove('hidden');
+            };
+            const hideError = () => dom.errorMessage.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
