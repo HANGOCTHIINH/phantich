@@ -55,7 +55,7 @@
 
     <div class="container mx-auto p-4 md:p-6">
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Image to Prompt 4.0 ✨</h1>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Image to Prompt 5.0 ✨</h1>
             <p class="text-gray-600 mt-2">Trợ lý sáng tạo AI: Phân tích, tối ưu và brainstorm ý tưởng từ ảnh.</p>
         </header>
 
@@ -289,11 +289,13 @@
             
             // --- Chức năng gọi API Gemini ---
 
-            // Hàm gọi API chung, có thể xử lý cả text và vision
-            async function callGeminiAPI(model, requestBody) {
+            // **FIXED**: Simplified and unified API call function
+            async function callGeminiAPI(requestBody) {
                 const apiKey = dom.apiKeyInput.value.trim();
                 if (!apiKey) throw new Error("Vui lòng nhập và lưu API Key của Gemini.");
 
+                // **FIXED**: Using a single, powerful, and up-to-date model for all tasks.
+                const model = 'gemini-1.5-flash-latest';
                 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
                 const response = await fetch(API_URL, {
@@ -305,6 +307,7 @@
                 const data = await response.json();
 
                 if (!response.ok) {
+                    console.error("API Error Response:", data);
                     throw new Error(data.error?.message || `Lỗi HTTP: ${response.status}`);
                 }
                 
@@ -314,6 +317,7 @@
                     const finishReason = data.candidates?.[0]?.finishReason || 'UNKNOWN';
                     let reasonText = `API không trả về nội dung (Lý do: ${finishReason}).`;
                     if (finishReason === 'SAFETY') reasonText = "Nội dung có thể đã vi phạm chính sách an toàn.";
+                    console.error("API Response without text:", data);
                     throw new Error(reasonText);
                 }
             }
@@ -327,7 +331,6 @@
                 hideError();
 
                 try {
-                    // **FIXED**: Construct the full, correct instruction prompt directly.
                     const instructionPrompt = `You are a world-class prompt engineer specializing in reverse-engineering images into descriptive text prompts for AI image generators. Your task is to analyze the provided image with meticulous detail.
 First, identify and break down every aspect of the image:
 Subject: Describe the main character(s) or focal object(s). Note their appearance, clothing, age, emotion, and posture.
@@ -343,7 +346,7 @@ Your final output must only be the generated prompt text, with no preamble or ex
                         contents: [{ parts: [ { text: instructionPrompt }, { inlineData: { mimeType: imageMimeType, data: imageBase64 } } ] }]
                     };
                     
-                    const resultText = await callGeminiAPI('gemini-pro-vision', requestBody);
+                    const resultText = await callGeminiAPI(requestBody);
                     dom.outputPrompt.value = resultText;
                     setAiActionsEnabled(true);
 
@@ -366,11 +369,10 @@ Your final output must only be the generated prompt text, with no preamble or ex
                 try {
                     const suggestionPrompt = `Based on the following AI art prompt, generate 3 alternative creative variations. Each variation should offer a distinctly different mood, setting, or artistic interpretation. Present them as a numbered list with bold titles for each variation. Original prompt: "${currentPrompt}"`;
                     const requestBody = { contents: [{ parts: [{ text: suggestionPrompt }] }] };
-                    const suggestions = await callGeminiAPI('gemini-pro', requestBody);
-                    // Format response for better display
+                    const suggestions = await callGeminiAPI(requestBody);
                     dom.suggestionText.innerHTML = suggestions
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold titles
-                        .replace(/\n/g, '<br>'); // New lines
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br>');
                 } catch (error) {
                     dom.suggestionText.textContent = `Không thể tạo gợi ý: ${error.message}`;
                 } finally {
@@ -386,7 +388,7 @@ Your final output must only be the generated prompt text, with no preamble or ex
                 try {
                     const optimizationPrompt = `You are a prompt engineering expert for Midjourney. Take the following prompt and optimize it. Add relevant parameters like --ar 16:9, --v 6.0, and enhance the descriptive keywords to maximize visual quality and coherence. Do not explain your process, just provide the final, optimized prompt. Original prompt: "${currentPrompt}"`;
                     const requestBody = { contents: [{ parts: [{ text: optimizationPrompt }] }] };
-                    const optimizedPrompt = await callGeminiAPI('gemini-pro', requestBody);
+                    const optimizedPrompt = await callGeminiAPI(requestBody);
                     dom.outputPrompt.value = optimizedPrompt;
                 } catch (error) {
                     showError(`Không thể tối ưu prompt: ${error.message}`);
@@ -401,10 +403,9 @@ Your final output must only be the generated prompt text, with no preamble or ex
             dom.copyBtn.addEventListener('click', () => {
                 const textToCopy = dom.outputPrompt.value;
                 if (!textToCopy) return;
-                // **FIXED**: Use a more compatible copy method for iframes.
                 const textarea = document.createElement('textarea');
                 textarea.value = textToCopy;
-                textarea.style.position = 'fixed'; // Prevent scrolling to bottom of page in MS Edge.
+                textarea.style.position = 'fixed';
                 textarea.style.left = '-9999px';
                 document.body.appendChild(textarea);
                 textarea.select();
@@ -420,10 +421,10 @@ Your final output must only be the generated prompt text, with no preamble or ex
 
             function setLoadingState(isLoading) {
                 dom.loadingSpinner.classList.toggle('hidden', !isLoading);
+                const shouldDisableButtons = isLoading || !dom.outputPrompt.value;
                 dom.generateBtn.disabled = isLoading;
-                // **FIXED**: Always disable AI buttons when any loading process starts.
-                dom.suggestBtn.disabled = isLoading;
-                dom.optimizeBtn.disabled = isLoading;
+                dom.suggestBtn.disabled = shouldDisableButtons;
+                dom.optimizeBtn.disabled = shouldDisableButtons;
             }
             
             function setAiActionsEnabled(isEnabled) {
@@ -440,3 +441,4 @@ Your final output must only be the generated prompt text, with no preamble or ex
     </script>
 </body>
 </html>
+
